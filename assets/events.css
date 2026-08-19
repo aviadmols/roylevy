@@ -503,7 +503,11 @@ body.rle-popup-open {
 .rle-overlay__backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, .82);
+    background-image: url(/wp-content/uploads/2026/08/a0437fea-09b6-42ea-87cc-0dc4888bfb93.jpg) !important;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-color: #000;
 }
 
 .rle-overlay__dialog {
@@ -512,9 +516,9 @@ body.rle-popup-open {
     width: min(92vw, 720px);
     max-height: min(86vh, 820px);
     overflow: auto;
-    background: #1E161E;
-    border: 1px solid rgba(255, 255, 255, .12);
-    box-shadow: 0 44px 100px -34px rgba(0, 0, 0, .95);
+    background: rgba(0, 0, 0, .62);
+    border: 0;
+    box-shadow: none;
 }
 
 .rle-overlay__content {
@@ -522,11 +526,7 @@ body.rle-popup-open {
 }
 
 .rle-overlay__eyebrow {
-    margin: 0 0 10px;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 3px;
-    color: var(--rle-white-soft);
+    display: none;
 }
 
 .rle-overlay__title {
@@ -536,6 +536,19 @@ body.rle-popup-open {
     line-height: 0.95;
     letter-spacing: 2px;
     color: var(--rle-white);
+}
+
+.rle-overlay__title--image {
+    font-size: 0;
+    line-height: 0;
+    text-align: center;
+}
+
+.rle-overlay__title--image img {
+    display: block;
+    width: min(100%, 340px);
+    height: auto;
+    margin: 0 auto;
 }
 
 .rle-overlay__subtitle {
@@ -591,6 +604,7 @@ body.rle-popup-open {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 22px 24px;
+    position: relative;
 }
 
 .rle-contact__field {
@@ -600,8 +614,9 @@ body.rle-popup-open {
 }
 
 .rle-contact__field--full,
-.rle-contact__whatsapp,
-.rle-contact__status {
+.rle-contact__submit,
+.rle-contact__status,
+.rle-contact__honeypot {
     grid-column: 1 / -1;
 }
 
@@ -639,17 +654,22 @@ body.rle-popup-open {
     border-bottom: 2px solid #fff;
 }
 
-.rle-contact__whatsapp,
-.rle-contact__whatsapp:hover,
-.rle-contact__whatsapp:focus,
-.rle-contact__whatsapp:focus-visible,
-.rle-contact__whatsapp:active {
+.rle-contact__honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.rle-contact__submit,
+.rle-contact__submit:hover,
+.rle-contact__submit:focus,
+.rle-contact__submit:focus-visible,
+.rle-contact__submit:active {
     justify-self: start;
     appearance: none;
     -webkit-appearance: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     margin-top: 8px;
     padding: 14px 28px;
     border: 1px solid #fff;
@@ -663,9 +683,41 @@ body.rle-popup-open {
     font-size: 14px;
     font-weight: 500;
     letter-spacing: 2px;
-    text-decoration: none !important;
     cursor: pointer;
-    transition: opacity .5s ease, border-color .5s ease, color .5s ease;
+    transition: opacity .5s ease, border-color .5s ease;
+}
+
+.rle-contact__submit:disabled {
+    opacity: .55;
+    cursor: wait;
+}
+
+.rle-contact__wa-icon,
+.rle-contact__wa-icon:hover,
+.rle-contact__wa-icon:focus,
+.rle-contact__wa-icon:focus-visible,
+.rle-contact__wa-icon:active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin: 28px auto 0;
+    border: 0;
+    border-radius: 50%;
+    background: #25D366 !important;
+    background-color: #25D366 !important;
+    background-image: none !important;
+    color: #fff !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+}
+
+.rle-contact__wa-icon svg {
+    width: 30px;
+    height: 30px;
+    display: block;
+    fill: currentColor;
 }
 
 .rle-contact__status {
@@ -678,10 +730,16 @@ body.rle-popup-open {
     color: #e78a8a;
 }
 
-.rle-overlay .rle-popup__close {
+.rle-overlay .rle-popup__close,
+.rle-overlay .rle-popup__close:hover,
+.rle-overlay .rle-popup__close:focus,
+.rle-overlay .rle-popup__close:active {
     position: absolute;
     top: 16px;
     inset-inline-start: 16px;
+    inset-inline-end: auto;
+    right: auto;
+    left: auto;
     float: none;
     margin: 0;
 }
@@ -830,13 +888,13 @@ body.rle-popup-open {
 
     .rle-overlay {
         padding: 12px;
-        align-items: stretch;
+        align-items: center;
     }
 
     .rle-overlay__dialog {
-        width: 100%;
-        max-height: 100%;
-        align-self: stretch;
+        width: min(92vw, 720px);
+        max-height: min(86vh, 820px);
+        align-self: center;
     }
 
     .rle-overlay__content {
