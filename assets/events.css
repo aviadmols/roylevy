@@ -36,6 +36,44 @@
     text-decoration: none;
 }
 
+.rle-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 28px;
+    padding: calc(14px + env(safe-area-inset-top)) 20px 14px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, .55) 0%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
+}
+
+.rle-nav__link {
+    pointer-events: auto;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--rle-white);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    line-height: 1;
+    padding: 8px 0;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: border-color .5s ease, opacity .5s ease;
+}
+
+.rle-nav__link:hover,
+.rle-nav__link:focus {
+    opacity: 1;
+    border-bottom-color: var(--rle-white);
+}
+
 .rle-showcase__sticky {
     position: sticky;
     top: 0;
@@ -54,7 +92,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background: #000;
+    background: #1E161E;
 }
 
 .rle-showcase__image {
@@ -162,6 +200,16 @@
 
 .rle-showcase .rle-row:hover {
     background: rgba(255, 255, 255, .05);
+}
+
+.rle-showcase .rle-row--link {
+    color: inherit;
+    cursor: pointer;
+}
+
+.rle-showcase .rle-row--link:focus-visible {
+    outline: 1px solid rgba(255, 255, 255, .35);
+    outline-offset: -1px;
 }
 
 .rle-showcase .rle-row + .rle-row::before {
@@ -278,7 +326,7 @@
 }
 
 .rle-showcase .rle-row__button {
-     background-image: url(/wp-content/uploads/2026/08/ChatGPT-Image-Aug-14-2026-04_59_44-PM.png) !important;
+     background-image: url(/wp-content/uploads/2026/08/6137785e-2bd7-41d2-b165-7cfa0f01cb5b.png) !important;
     background-size: contain !important;
     background-repeat: no-repeat !important;
     display: inline-flex;
@@ -422,6 +470,214 @@ body.rle-popup-open {
     overflow: hidden !important;
 }
 
+.rle-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999998;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+}
+
+.rle-overlay.is-open {
+    display: flex;
+}
+
+.rle-overlay__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .82);
+}
+
+.rle-overlay__dialog {
+    position: relative;
+    z-index: 1;
+    width: min(92vw, 720px);
+    max-height: min(86vh, 820px);
+    overflow: auto;
+    background: #1E161E;
+    border: 1px solid rgba(255, 255, 255, .12);
+    box-shadow: 0 44px 100px -34px rgba(0, 0, 0, .95);
+}
+
+.rle-overlay__content {
+    padding: clamp(52px, 7vw, 72px) clamp(22px, 5vw, 56px) clamp(32px, 5vw, 52px);
+}
+
+.rle-overlay__eyebrow {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    color: var(--rle-white-soft);
+}
+
+.rle-overlay__title {
+    margin: 0 0 28px;
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: 2px;
+    color: var(--rle-white);
+}
+
+.rle-overlay__subtitle {
+    margin: 28px 0 12px;
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--rle-white);
+}
+
+.rle-overlay__body {
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1.75;
+    color: rgba(255, 255, 255, .86);
+}
+
+.rle-overlay__body p {
+    margin: 0 0 16px;
+}
+
+.rle-overlay__body p:last-child {
+    margin-bottom: 0;
+}
+
+.rle-overlay__body strong {
+    font-weight: 700;
+    color: var(--rle-white);
+}
+
+.rle-overlay__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    margin: 0 0 28px;
+}
+
+.rle-overlay__links a {
+    color: var(--rle-white);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: .04em;
+    border-bottom: 1px solid rgba(255, 255, 255, .35);
+    padding-bottom: 2px;
+    transition: border-color .5s ease;
+}
+
+.rle-overlay__links a:hover {
+    border-bottom-color: var(--rle-white);
+}
+
+.rle-contact {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px 24px;
+}
+
+.rle-contact__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rle-contact__field--full,
+.rle-contact__submit,
+.rle-contact__status,
+.rle-contact__honeypot {
+    grid-column: 1 / -1;
+}
+
+.rle-contact__field span {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    color: var(--rle-white-soft);
+}
+
+.rle-contact input,
+.rle-contact textarea {
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid #BCBCBC;
+    border-radius: 0;
+    background: transparent;
+    color: var(--rle-white);
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    padding: 6px 0 8px;
+    outline: none;
+    box-shadow: none;
+}
+
+.rle-contact textarea {
+    resize: vertical;
+    min-height: 96px;
+}
+
+.rle-contact input:focus,
+.rle-contact textarea:focus {
+    border-bottom: 2px solid #fff;
+}
+
+.rle-contact__honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.rle-contact__submit {
+    justify-self: start;
+    appearance: none;
+    margin-top: 8px;
+    padding: 14px 28px;
+    border: 1px solid #fff;
+    border-radius: 0;
+    background: transparent;
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all .5s ease;
+}
+
+.rle-contact__submit:hover,
+.rle-contact__submit:focus {
+    background: #fff;
+    color: #000;
+}
+
+.rle-contact__submit:disabled {
+    opacity: .55;
+    cursor: wait;
+}
+
+.rle-contact__status {
+    margin: 0;
+    font-size: 14px;
+    color: var(--rle-white-soft);
+}
+
+.rle-contact__status.is-error {
+    color: #e78a8a;
+}
+
+.rle-overlay .rle-popup__close {
+    position: absolute;
+    top: 16px;
+    inset-inline-start: 16px;
+    float: none;
+    margin: 0;
+}
+
 @media (max-width: 1024px) {
     .rle-showcase__flow {
         margin-top: -10vh;
@@ -553,6 +809,35 @@ body.rle-popup-open {
         width: 44px;
         height: 44px;
         font-size: 34px;
+    }
+
+    .rle-nav {
+        gap: 20px;
+        padding-top: calc(12px + env(safe-area-inset-top));
+    }
+
+    .rle-nav__link {
+        font-size: 13px;
+        letter-spacing: 1.5px;
+    }
+
+    .rle-overlay {
+        padding: 12px;
+        align-items: stretch;
+    }
+
+    .rle-overlay__dialog {
+        width: 100%;
+        max-height: 100%;
+        align-self: stretch;
+    }
+
+    .rle-overlay__content {
+        padding: 56px 22px 32px;
+    }
+
+    .rle-contact {
+        grid-template-columns: 1fr;
     }
 }
 

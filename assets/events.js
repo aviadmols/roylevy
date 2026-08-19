@@ -37,6 +37,11 @@ document.addEventListener('DOMContentLoaded', function() {
         frame = requestAnimationFrame(updateBackground);
     };
 
+    const syncBodyLock = function() {
+        const open = document.querySelector('.rle-popup.is-open, .rle-overlay.is-open');
+        document.body.classList.toggle('rle-popup-open', Boolean(open));
+    };
+
     const closePopup = function(popup) {
         if (!popup) {
             return;
@@ -45,11 +50,37 @@ document.addEventListener('DOMContentLoaded', function() {
         const iframe = popup.querySelector('[data-rle-popup-iframe]');
         popup.classList.remove('is-open', 'is-loaded');
         popup.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('rle-popup-open');
 
         if (iframe) {
             iframe.src = 'about:blank';
         }
+
+        syncBodyLock();
+    };
+
+    const closeOverlays = function(section) {
+        const overlays = section ? section.querySelectorAll('.rle-overlay.is-open') : document.querySelectorAll('.rle-overlay.is-open');
+
+        overlays.forEach(function(overlay) {
+            overlay.classList.remove('is-open');
+            overlay.setAttribute('aria-hidden', 'true');
+        });
+
+        syncBodyLock();
+    };
+
+    const openOverlay = function(section, name) {
+        closeOverlays(section);
+        closePopup(section.querySelector('[data-rle-popup]'));
+
+        const overlay = section.querySelector('[data-rle-overlay="' + name + '"]');
+        if (!overlay) {
+            return;
+        }
+
+        overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+        syncBodyLock();
     };
 
     sections.forEach(function(section) {
@@ -67,10 +98,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 event.preventDefault();
+                closeOverlays(section);
                 popup.classList.remove('is-loaded');
                 popup.classList.add('is-open');
                 popup.setAttribute('aria-hidden', 'false');
-                document.body.classList.add('rle-popup-open');
+                syncBodyLock();
                 iframe.src = url;
             });
         });
@@ -88,10 +120,88 @@ document.addEventListener('DOMContentLoaded', function() {
                 closePopup(popup);
             });
         });
+
+        section.querySelectorAll('[data-rle-overlay-open]').forEach(function(trigger) {
+            trigger.addEventListener('click', function() {
+                openOverlay(section, trigger.getAttribute('data-rle-overlay-open'));
+            });
+        });
+
+        section.querySelectorAll('[data-rle-overlay-close]').forEach(function(button) {
+            button.addEventListener('click', function() {
+                closeOverlays(section);
+            });
+        });
+
+        const form = section.querySelector('[data-rle-contact-form]');
+        if (form) {
+            const status = form.querySelector('[data-rle-contact-status]');
+            const submit = form.querySelector('[type="submit"]');
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                if (!window.RLEFront || !RLEFront.ajaxUrl) {
+                    return;
+                }
+
+                const data = new FormData(form);
+                data.append('action', 'rle_contact');
+                data.append('nonce', RLEFront.nonce);
+
+                if (status) {
+                    status.hidden = true;
+                    status.classList.remove('is-error');
+                }
+
+                if (submit) {
+                    submit.disabled = true;
+                }
+
+                fetch(RLEFront.ajaxUrl, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    body: data
+                }).then(function(response) {
+                    return response.json().then(function(payload) {
+                        return { ok: response.ok, payload: payload };
+                    });
+                }).then(function(result) {
+                    const payload = result.payload || {};
+                    const message = (payload.data && payload.data.message) || (payload.success ? 'ההודעה נשלחה.' : 'שליחת ההודעה נכשלה.');
+
+                    if (status) {
+                        status.hidden = false;
+                        status.textContent = message;
+                        status.classList.toggle('is-error', !payload.success);
+                    }
+
+                    if (payload.success) {
+                        form.reset();
+                    }
+                }).catch(function() {
+                    if (status) {
+                        status.hidden = false;
+                        status.textContent = 'שליחת ההודעה נכשלה. נסו שוב מאוחר יותר.';
+                        status.classList.add('is-error');
+                    }
+                }).finally(function() {
+                    if (submit) {
+                        submit.disabled = false;
+                    }
+                });
+            });
+        }
     });
 
     document.addEventListener('keydown', function(event) {
         if (event.key !== 'Escape') {
+            return;
+        }
+
+        const openOverlayEl = document.querySelector('.rle-overlay.is-open');
+        if (openOverlayEl) {
+            closeOverlays();
             return;
         }
 

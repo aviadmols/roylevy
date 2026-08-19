@@ -2,7 +2,7 @@
 /*
 Plugin Name: Roey Events
 Description: Event post type, automatic import and showcase display for upcoming shows.
-Version: 1.6.0
+Version: 1.7.0
 Author: Site Admin
 */
 
@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RLE_VERSION', '1.6.0');
+define('RLE_VERSION', '1.7.0');
 define('RLE_URL', plugin_dir_url(__FILE__));
 define('RLE_PATH', plugin_dir_path(__FILE__));
 
@@ -20,6 +20,8 @@ add_action('save_post_rle_event', 'rle_save_event_meta', 10, 2);
 add_action('admin_enqueue_scripts', 'rle_admin_assets');
 add_action('wp_enqueue_scripts', 'rle_front_assets');
 add_action('wp_ajax_rle_fetch_event', 'rle_ajax_fetch_event');
+add_action('wp_ajax_rle_contact', 'rle_ajax_contact');
+add_action('wp_ajax_nopriv_rle_contact', 'rle_ajax_contact');
 add_filter('manage_rle_event_posts_columns', 'rle_event_columns');
 add_action('manage_rle_event_posts_custom_column', 'rle_event_column_content', 10, 2);
 add_filter('manage_edit-rle_event_sortable_columns', 'rle_event_sortable_columns');
@@ -77,6 +79,18 @@ function rle_add_settings_page() {
     );
 }
 
+function rle_default_about_text() {
+    return "רועי לוי במופע סטנדאפ חדש, חד וחסר מעצורים!\n\nמחלוצי ז'אנר הסטנדאפ בישראל, האיש מאחורי מועדון ה\"קאמל קומדי קלאב\" ומי שהגדיר מחדש את ההומור והאינטראקציה עם הקהל, ממשיך בסיבוב הופעות ברחבי הארץ.\nרועי לוי, אחד הקולות המזוהים, המשפיעים והוותיקים בסצנת הקומדיה הישראלית, מביא אל הבמה מופע סטנדאפ אישי, קצבי ומשוחרר.\nלוי, שהחל את דרכו בראשית ימי הסטנדאפ בארץ והפך ברבות השנים לבעליו ומנהלו של מוסד הצחוק המיתולוגי *הקאמל קומדי קלאב*, מוכר לקהל הרחב מאינספור תוכניות טלוויזיה מצליחות.\n\nעל המופע:\nהמופע של רועי לוי מתאפיין ביכולת אלתור פנומנלית, שנינות מהירה ואינטראקציה ישירה ובלתי אמצעית עם הקהל. לוי מפרק לגורמים את היומיום הישראלי, הזוגיות, ההורות, התבגרות בעולם המודרני ומצבי חיים אבסורדיים – הכל בהגשה אותנטית, ללא פילטרים ובקצב שמייצר חוויה שונה וייחודית בכל ערב מחדש.\n\nסטנדאפ קלאסי משולב באלתורים חיים ואינטראקציה עם הקהל.\nקומדיה אינטליגנטית, חדה ונטולת עכבות.";
+}
+
+function rle_format_about_html($text) {
+    $text = (string) $text;
+    $text = preg_replace('/\*([^*]+)\*/', '<strong>$1</strong>', $text);
+    $html = wpautop($text);
+    $html = preg_replace('/<p>\s*על המופע:\s*<\/p>/u', '<h3 class="rle-overlay__subtitle">על המופע</h3>', $html);
+    return $html;
+}
+
 function rle_get_settings() {
     $defaults = [
         'hero_title' => 'רועי לוי',
@@ -85,6 +99,10 @@ function rle_get_settings() {
         'button_text' => 'רכישת כרטיסים',
         'sold_out_text' => 'אזלו הכרטיסים',
         'empty_text' => 'אין כרגע הופעות קרובות.',
+        'about_text' => rle_default_about_text(),
+        'contact_email' => '',
+        'contact_phone' => '',
+        'contact_whatsapp' => '',
     ];
 
     $settings = get_option('rle_settings', []);
@@ -101,13 +119,18 @@ function rle_render_settings_page() {
     }
 
     if (isset($_POST['rle_settings_nonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['rle_settings_nonce'])), 'rle_save_settings')) {
+        $current = rle_get_settings();
         $settings = [
-            'hero_title' => isset($_POST['hero_title']) ? sanitize_text_field(wp_unslash($_POST['hero_title'])) : '',
+            'hero_title' => $current['hero_title'],
             'board_title' => isset($_POST['board_title']) ? sanitize_text_field(wp_unslash($_POST['board_title'])) : '',
             'hero_image' => isset($_POST['hero_image']) ? esc_url_raw(wp_unslash($_POST['hero_image'])) : '',
             'button_text' => isset($_POST['button_text']) ? sanitize_text_field(wp_unslash($_POST['button_text'])) : '',
             'sold_out_text' => isset($_POST['sold_out_text']) ? sanitize_text_field(wp_unslash($_POST['sold_out_text'])) : '',
             'empty_text' => isset($_POST['empty_text']) ? sanitize_text_field(wp_unslash($_POST['empty_text'])) : '',
+            'about_text' => isset($_POST['about_text']) ? sanitize_textarea_field(wp_unslash($_POST['about_text'])) : $current['about_text'],
+            'contact_email' => isset($_POST['contact_email']) ? sanitize_email(wp_unslash($_POST['contact_email'])) : '',
+            'contact_phone' => isset($_POST['contact_phone']) ? sanitize_text_field(wp_unslash($_POST['contact_phone'])) : '',
+            'contact_whatsapp' => isset($_POST['contact_whatsapp']) ? sanitize_text_field(wp_unslash($_POST['contact_whatsapp'])) : '',
         ];
         update_option('rle_settings', $settings);
         echo '<div class="notice notice-success is-dismissible"><p>ההגדרות נשמרו.</p></div>';
@@ -140,6 +163,22 @@ function rle_render_settings_page() {
                     <tr>
                         <th scope="row"><label for="empty_text">טקסט כשאין הופעות</label></th>
                         <td><input name="empty_text" id="empty_text" type="text" class="regular-text" value="<?php echo esc_attr($settings['empty_text']); ?>"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="about_text">טקסט אודות</label></th>
+                        <td><textarea name="about_text" id="about_text" class="large-text" rows="12"><?php echo esc_textarea($settings['about_text']); ?></textarea></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="contact_email">אימייל לפניות</label></th>
+                        <td><input name="contact_email" id="contact_email" type="email" class="regular-text" value="<?php echo esc_attr($settings['contact_email']); ?>" placeholder="<?php echo esc_attr(get_option('admin_email')); ?>"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="contact_phone">טלפון</label></th>
+                        <td><input name="contact_phone" id="contact_phone" type="text" class="regular-text" value="<?php echo esc_attr($settings['contact_phone']); ?>"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="contact_whatsapp">וואטסאפ</label></th>
+                        <td><input name="contact_whatsapp" id="contact_whatsapp" type="text" class="regular-text" value="<?php echo esc_attr($settings['contact_whatsapp']); ?>" placeholder="97250..."></td>
                     </tr>
                 </tbody>
             </table>
@@ -403,6 +442,36 @@ function rle_admin_assets($hook) {
 function rle_front_assets() {
     wp_register_style('rle-events', RLE_URL . 'assets/events.css', [], RLE_VERSION);
     wp_register_script('rle-events', RLE_URL . 'assets/events.js', [], RLE_VERSION, true);
+}
+
+function rle_ajax_contact() {
+    check_ajax_referer('rle_contact', 'nonce');
+
+    $honeypot = isset($_POST['website']) ? trim((string) wp_unslash($_POST['website'])) : '';
+    if ($honeypot !== '') {
+        wp_send_json_success(['message' => 'ההודעה נשלחה.']);
+    }
+
+    $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
+    $email = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
+    $phone = isset($_POST['phone']) ? sanitize_text_field(wp_unslash($_POST['phone'])) : '';
+    $message = isset($_POST['message']) ? sanitize_textarea_field(wp_unslash($_POST['message'])) : '';
+
+    if ($name === '' || $email === '' || !is_email($email) || $message === '') {
+        wp_send_json_error(['message' => 'יש למלא שם, אימייל תקין והודעה.'], 400);
+    }
+
+    $settings = rle_get_settings();
+    $to = $settings['contact_email'] ?: get_option('admin_email');
+    $subject = 'פנייה חדשה מהאתר — ' . $name;
+    $body = "שם: {$name}\nאימייל: {$email}\nטלפון: {$phone}\n\n{$message}";
+    $headers = ['Content-Type: text/plain; charset=UTF-8', 'Reply-To: ' . $name . ' <' . $email . '>'];
+
+    if (!wp_mail($to, $subject, $body, $headers)) {
+        wp_send_json_error(['message' => 'שליחת ההודעה נכשלה. נסו שוב מאוחר יותר.'], 500);
+    }
+
+    wp_send_json_success(['message' => 'ההודעה נשלחה. נחזור אליכם בהקדם.']);
 }
 
 function rle_ajax_fetch_event() {
@@ -968,10 +1037,20 @@ function rle_events_shortcode($atts) {
 
     wp_enqueue_style('rle-events');
     wp_enqueue_script('rle-events');
+    wp_localize_script('rle-events', 'RLEFront', [
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('rle_contact'),
+    ]);
+
+    $whatsapp_digits = preg_replace('/\D+/', '', (string) $settings['contact_whatsapp']);
 
     ob_start();
     ?>
     <section class="rle-showcase" id="<?php echo esc_attr($atts['section_id']); ?>" dir="rtl">
+        <nav class="rle-nav" aria-label="תפריט ראשי">
+            <button type="button" class="rle-nav__link" data-rle-overlay-open="about">אודות</button>
+            <button type="button" class="rle-nav__link" data-rle-overlay-open="contact">צרו קשר</button>
+        </nav>
         <div class="rle-showcase__sticky">
             <div class="rle-showcase__hero">
                 <?php if ($atts['hero_image']) : ?>
@@ -995,13 +1074,16 @@ function rle_events_shortcode($atts) {
                                 $day_name = $timestamp ? rle_day_short_hebrew($timestamp) : '';
                                 $location_line = trim($event['location']);
                                 $venue_line = trim($event['venue']);
+                                $clickable = ($event['ticket_status'] !== 'sold_out' && !empty($event['ticket_url']));
+                                $row_tag = $clickable ? 'a' : 'article';
+                                $row_label = trim($atts['button_text'] . ' — ' . $location_line . ' ' . $day_num . '.' . $month_num);
                                 ?>
-                                <article class="rle-row">
+                                <<?php echo $row_tag; ?> class="rle-row<?php echo $clickable ? ' rle-row--link' : ''; ?>"<?php if ($clickable) : ?> href="<?php echo esc_url($event['ticket_url']); ?>" data-rle-popup-url="<?php echo esc_url($event['ticket_url']); ?>" aria-label="<?php echo esc_attr($row_label); ?>"<?php endif; ?>>
                                     <div class="rle-row__action">
                                         <?php if ($event['ticket_status'] === 'sold_out') : ?>
                                             <span class="rle-row__button rle-row__button--disabled">SOLD OUT</span>
                                         <?php elseif ($event['ticket_url']) : ?>
-                                            <a class="rle-row__button" href="<?php echo esc_url($event['ticket_url']); ?>" data-rle-popup-url="<?php echo esc_url($event['ticket_url']); ?>"><?php echo esc_html($atts['button_text']); ?></a>
+                                            <span class="rle-row__button"><?php echo esc_html($atts['button_text']); ?></span>
                                         <?php else : ?>
                                             <span class="rle-row__button rle-row__button--disabled"><?php echo esc_html($atts['sold_out_text']); ?></span>
                                         <?php endif; ?>
@@ -1034,7 +1116,7 @@ function rle_events_shortcode($atts) {
                                             <?php endif; ?>
                                         </div>
                                     </div>
-                                </article>
+                                </<?php echo $row_tag; ?>>
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
@@ -1047,6 +1129,65 @@ function rle_events_shortcode($atts) {
                 <button type="button" class="rle-popup__close" data-rle-popup-close aria-label="סגירה">×</button>
                 <div class="rle-popup__loader" data-rle-popup-loader>טוען...</div>
                 <iframe class="rle-popup__iframe" data-rle-popup-iframe src="about:blank" title="רכישת כרטיסים" allow="payment *; fullscreen *" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            </div>
+        </div>
+        <div class="rle-overlay" data-rle-overlay="about" aria-hidden="true">
+            <div class="rle-overlay__backdrop" data-rle-overlay-close></div>
+            <div class="rle-overlay__dialog" role="dialog" aria-modal="true" aria-labelledby="rle-about-title">
+                <button type="button" class="rle-popup__close" data-rle-overlay-close aria-label="סגירה">×</button>
+                <div class="rle-overlay__content">
+                    <p class="rle-overlay__eyebrow">רועי לוי</p>
+                    <h2 class="rle-overlay__title" id="rle-about-title">אודות</h2>
+                    <div class="rle-overlay__body">
+                        <?php echo wp_kses_post(rle_format_about_html($settings['about_text'])); ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="rle-overlay" data-rle-overlay="contact" aria-hidden="true">
+            <div class="rle-overlay__backdrop" data-rle-overlay-close></div>
+            <div class="rle-overlay__dialog" role="dialog" aria-modal="true" aria-labelledby="rle-contact-title">
+                <button type="button" class="rle-popup__close" data-rle-overlay-close aria-label="סגירה">×</button>
+                <div class="rle-overlay__content">
+                    <p class="rle-overlay__eyebrow">רועי לוי</p>
+                    <h2 class="rle-overlay__title" id="rle-contact-title">צרו קשר</h2>
+                    <?php if ($settings['contact_phone'] || $whatsapp_digits || $settings['contact_email']) : ?>
+                        <div class="rle-overlay__links">
+                            <?php if ($settings['contact_phone']) : ?>
+                                <a href="tel:<?php echo esc_attr(preg_replace('/\s+/', '', $settings['contact_phone'])); ?>"><?php echo esc_html($settings['contact_phone']); ?></a>
+                            <?php endif; ?>
+                            <?php if ($whatsapp_digits) : ?>
+                                <a href="https://wa.me/<?php echo esc_attr($whatsapp_digits); ?>" target="_blank" rel="noopener noreferrer">וואטסאפ</a>
+                            <?php endif; ?>
+                            <?php if ($settings['contact_email']) : ?>
+                                <a href="mailto:<?php echo esc_attr($settings['contact_email']); ?>"><?php echo esc_html($settings['contact_email']); ?></a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                    <form class="rle-contact" data-rle-contact-form>
+                        <label class="rle-contact__field">
+                            <span>שם</span>
+                            <input type="text" name="name" required autocomplete="name">
+                        </label>
+                        <label class="rle-contact__field">
+                            <span>אימייל</span>
+                            <input type="email" name="email" required autocomplete="email">
+                        </label>
+                        <label class="rle-contact__field">
+                            <span>טלפון</span>
+                            <input type="tel" name="phone" autocomplete="tel">
+                        </label>
+                        <label class="rle-contact__field rle-contact__field--full">
+                            <span>הודעה</span>
+                            <textarea name="message" rows="4" required></textarea>
+                        </label>
+                        <div class="rle-contact__honeypot" aria-hidden="true">
+                            <input type="text" name="website" tabindex="-1" autocomplete="off">
+                        </div>
+                        <button type="submit" class="rle-contact__submit">שליחה</button>
+                        <p class="rle-contact__status" data-rle-contact-status hidden></p>
+                    </form>
+                </div>
             </div>
         </div>
     </section>
