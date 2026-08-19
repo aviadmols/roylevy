@@ -2,7 +2,7 @@
 /*
 Plugin Name: Roey Events
 Description: Event post type, automatic import and showcase display for upcoming shows.
-Version: 1.7.0
+Version: 1.7.3
 Author: Site Admin
 */
 
@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RLE_VERSION', '1.7.0');
+define('RLE_VERSION', '1.7.3');
 define('RLE_URL', plugin_dir_url(__FILE__));
 define('RLE_PATH', plugin_dir_path(__FILE__));
 
@@ -128,8 +128,8 @@ function rle_render_settings_page() {
             'sold_out_text' => isset($_POST['sold_out_text']) ? sanitize_text_field(wp_unslash($_POST['sold_out_text'])) : '',
             'empty_text' => isset($_POST['empty_text']) ? sanitize_text_field(wp_unslash($_POST['empty_text'])) : '',
             'about_text' => isset($_POST['about_text']) ? sanitize_textarea_field(wp_unslash($_POST['about_text'])) : $current['about_text'],
-            'contact_email' => isset($_POST['contact_email']) ? sanitize_email(wp_unslash($_POST['contact_email'])) : '',
-            'contact_phone' => isset($_POST['contact_phone']) ? sanitize_text_field(wp_unslash($_POST['contact_phone'])) : '',
+            'contact_email' => $current['contact_email'],
+            'contact_phone' => $current['contact_phone'],
             'contact_whatsapp' => isset($_POST['contact_whatsapp']) ? sanitize_text_field(wp_unslash($_POST['contact_whatsapp'])) : '',
         ];
         update_option('rle_settings', $settings);
@@ -169,16 +169,11 @@ function rle_render_settings_page() {
                         <td><textarea name="about_text" id="about_text" class="large-text" rows="12"><?php echo esc_textarea($settings['about_text']); ?></textarea></td>
                     </tr>
                     <tr>
-                        <th scope="row"><label for="contact_email">אימייל לפניות</label></th>
-                        <td><input name="contact_email" id="contact_email" type="email" class="regular-text" value="<?php echo esc_attr($settings['contact_email']); ?>" placeholder="<?php echo esc_attr(get_option('admin_email')); ?>"></td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="contact_phone">טלפון</label></th>
-                        <td><input name="contact_phone" id="contact_phone" type="text" class="regular-text" value="<?php echo esc_attr($settings['contact_phone']); ?>"></td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="contact_whatsapp">וואטסאפ</label></th>
-                        <td><input name="contact_whatsapp" id="contact_whatsapp" type="text" class="regular-text" value="<?php echo esc_attr($settings['contact_whatsapp']); ?>" placeholder="97250..."></td>
+                        <th scope="row"><label for="contact_whatsapp">מספר וואטסאפ</label></th>
+                        <td>
+                            <input name="contact_whatsapp" id="contact_whatsapp" type="text" class="regular-text" value="<?php echo esc_attr($settings['contact_whatsapp']); ?>" placeholder="0501234567 או 972501234567">
+                            <p class="description">המספר שישמש את כפתור הוואטסאפ בפופאפ צרו קשר.</p>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -442,6 +437,23 @@ function rle_admin_assets($hook) {
 function rle_front_assets() {
     wp_register_style('rle-events', RLE_URL . 'assets/events.css', [], RLE_VERSION);
     wp_register_script('rle-events', RLE_URL . 'assets/events.js', [], RLE_VERSION, true);
+}
+
+function rle_whatsapp_digits($value) {
+    $digits = preg_replace('/\D+/', '', (string) $value);
+    if ($digits === '') {
+        return '';
+    }
+
+    if (strpos($digits, '972') === 0) {
+        return $digits;
+    }
+
+    if (strpos($digits, '0') === 0) {
+        return '972' . substr($digits, 1);
+    }
+
+    return $digits;
 }
 
 function rle_ajax_contact() {
@@ -1042,7 +1054,7 @@ function rle_events_shortcode($atts) {
         'nonce' => wp_create_nonce('rle_contact'),
     ]);
 
-    $whatsapp_digits = preg_replace('/\D+/', '', (string) $settings['contact_whatsapp']);
+    $whatsapp_digits = rle_whatsapp_digits($settings['contact_whatsapp']);
 
     ob_start();
     ?>
@@ -1151,40 +1163,22 @@ function rle_events_shortcode($atts) {
                 <div class="rle-overlay__content">
                     <p class="rle-overlay__eyebrow">רועי לוי</p>
                     <h2 class="rle-overlay__title" id="rle-contact-title">צרו קשר</h2>
-                    <?php if ($settings['contact_phone'] || $whatsapp_digits || $settings['contact_email']) : ?>
-                        <div class="rle-overlay__links">
-                            <?php if ($settings['contact_phone']) : ?>
-                                <a href="tel:<?php echo esc_attr(preg_replace('/\s+/', '', $settings['contact_phone'])); ?>"><?php echo esc_html($settings['contact_phone']); ?></a>
-                            <?php endif; ?>
-                            <?php if ($whatsapp_digits) : ?>
-                                <a href="https://wa.me/<?php echo esc_attr($whatsapp_digits); ?>" target="_blank" rel="noopener noreferrer">וואטסאפ</a>
-                            <?php endif; ?>
-                            <?php if ($settings['contact_email']) : ?>
-                                <a href="mailto:<?php echo esc_attr($settings['contact_email']); ?>"><?php echo esc_html($settings['contact_email']); ?></a>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
                     <form class="rle-contact" data-rle-contact-form>
                         <label class="rle-contact__field">
                             <span>שם</span>
                             <input type="text" name="name" required autocomplete="name">
                         </label>
                         <label class="rle-contact__field">
-                            <span>אימייל</span>
-                            <input type="email" name="email" required autocomplete="email">
-                        </label>
-                        <label class="rle-contact__field">
                             <span>טלפון</span>
-                            <input type="tel" name="phone" autocomplete="tel">
+                            <input type="tel" name="phone" required autocomplete="tel">
                         </label>
                         <label class="rle-contact__field rle-contact__field--full">
                             <span>הודעה</span>
                             <textarea name="message" rows="4" required></textarea>
                         </label>
-                        <div class="rle-contact__honeypot" aria-hidden="true">
-                            <input type="text" name="website" tabindex="-1" autocomplete="off">
-                        </div>
-                        <button type="submit" class="rle-contact__submit">שליחה</button>
+                        <?php if ($whatsapp_digits) : ?>
+                            <a class="rle-contact__whatsapp" data-rle-whatsapp href="https://wa.me/<?php echo esc_attr($whatsapp_digits); ?>" target="_blank" rel="noopener noreferrer">וואטסאפ</a>
+                        <?php endif; ?>
                         <p class="rle-contact__status" data-rle-contact-status hidden></p>
                     </form>
                 </div>

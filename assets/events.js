@@ -136,61 +136,42 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = section.querySelector('[data-rle-contact-form]');
         if (form) {
             const status = form.querySelector('[data-rle-contact-status]');
-            const submit = form.querySelector('[type="submit"]');
+            const whatsapp = form.querySelector('[data-rle-whatsapp]');
 
             form.addEventListener('submit', function(event) {
                 event.preventDefault();
-
-                if (!window.RLEFront || !RLEFront.ajaxUrl) {
-                    return;
-                }
-
-                const data = new FormData(form);
-                data.append('action', 'rle_contact');
-                data.append('nonce', RLEFront.nonce);
-
-                if (status) {
-                    status.hidden = true;
-                    status.classList.remove('is-error');
-                }
-
-                if (submit) {
-                    submit.disabled = true;
-                }
-
-                fetch(RLEFront.ajaxUrl, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    body: data
-                }).then(function(response) {
-                    return response.json().then(function(payload) {
-                        return { ok: response.ok, payload: payload };
-                    });
-                }).then(function(result) {
-                    const payload = result.payload || {};
-                    const message = (payload.data && payload.data.message) || (payload.success ? 'ההודעה נשלחה.' : 'שליחת ההודעה נכשלה.');
-
-                    if (status) {
-                        status.hidden = false;
-                        status.textContent = message;
-                        status.classList.toggle('is-error', !payload.success);
-                    }
-
-                    if (payload.success) {
-                        form.reset();
-                    }
-                }).catch(function() {
-                    if (status) {
-                        status.hidden = false;
-                        status.textContent = 'שליחת ההודעה נכשלה. נסו שוב מאוחר יותר.';
-                        status.classList.add('is-error');
-                    }
-                }).finally(function() {
-                    if (submit) {
-                        submit.disabled = false;
-                    }
-                });
             });
+
+            if (whatsapp) {
+                whatsapp.addEventListener('click', function(event) {
+                    const nameField = form.querySelector('[name="name"]');
+                    const phoneField = form.querySelector('[name="phone"]');
+                    const messageField = form.querySelector('[name="message"]');
+                    const name = nameField ? nameField.value.trim() : '';
+                    const phone = phoneField ? phoneField.value.trim() : '';
+                    const message = messageField ? messageField.value.trim() : '';
+
+                    if (!name || !phone || !message) {
+                        event.preventDefault();
+                        if (status) {
+                            status.hidden = false;
+                            status.textContent = 'יש למלא שם, טלפון והודעה.';
+                            status.classList.add('is-error');
+                        }
+                        form.reportValidity();
+                        return;
+                    }
+
+                    if (status) {
+                        status.hidden = true;
+                        status.classList.remove('is-error');
+                    }
+
+                    const text = 'שם: ' + name + '\nטלפון: ' + phone + '\n\n' + message;
+                    const base = whatsapp.getAttribute('href').split('?')[0];
+                    whatsapp.setAttribute('href', base + '?text=' + encodeURIComponent(text));
+                });
+            }
         }
     });
 
