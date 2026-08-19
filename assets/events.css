@@ -413,11 +413,17 @@
     position: fixed;
     inset: 0;
     z-index: 999999;
-    display: none;
+    display: block;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .5s ease, visibility .5s ease;
 }
 
 .rle-popup.is-open {
-    display: block;
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .rle-popup__backdrop {
@@ -450,19 +456,21 @@
     top: max(18px, env(safe-area-inset-top));
     right: max(18px, env(safe-area-inset-right));
     z-index: 5;
-    width: 50px;
-    height: 50px;
+    width: 28px;
+    height: 28px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 0 5px;
-    border: 1px solid rgba(255, 255, 255, .28);
-    border-radius: 50%;
-    background: rgba(0, 0, 0, .82) !important;
-    background-color: rgba(0, 0, 0, .82) !important;
-    color: #fff !important;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, .28) !important;
-    font: 300 40px/1 Arial, sans-serif;
+    padding: 0;
+    border: 0 !important;
+    border-radius: 0;
+    background: transparent url(/wp-content/uploads/2026/08/68872004-cc7b-420d-99fc-bf11fd62ff3c.png) center center / contain no-repeat !important;
+    background-color: transparent !important;
+    color: transparent !important;
+    box-shadow: none !important;
+    font-size: 0 !important;
+    line-height: 0;
+    overflow: hidden;
     cursor: pointer;
 }
 
@@ -490,14 +498,21 @@ body.rle-popup-open {
     position: fixed;
     inset: 0;
     z-index: 999998;
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px 16px;
+    overflow: hidden;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .5s ease, visibility .5s ease;
 }
 
 .rle-overlay.is-open {
-    display: flex;
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .rle-overlay__backdrop {
@@ -513,9 +528,12 @@ body.rle-popup-open {
 .rle-overlay__dialog {
     position: relative;
     z-index: 1;
-    width: min(92vw, 720px);
+    width: min(100%, 720px);
+    max-width: 100%;
     max-height: min(86vh, 820px);
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     background: rgba(0, 0, 0, .62);
     border: 0;
     box-shadow: none;
@@ -523,6 +541,8 @@ body.rle-popup-open {
 
 .rle-overlay__content {
     padding: clamp(52px, 7vw, 72px) clamp(22px, 5vw, 56px) clamp(32px, 5vw, 52px);
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .rle-overlay__eyebrow {
@@ -547,6 +567,7 @@ body.rle-popup-open {
 .rle-overlay__title--image img {
     display: block;
     width: min(100%, 340px);
+    max-width: 100%;
     height: auto;
     margin: 0 auto;
 }
@@ -564,6 +585,8 @@ body.rle-popup-open {
     font-weight: 400;
     line-height: 1.75;
     color: rgba(255, 255, 255, .86);
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .rle-overlay__body p {
@@ -602,9 +625,10 @@ body.rle-popup-open {
 
 .rle-contact {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 22px 24px;
     position: relative;
+    max-width: 100%;
 }
 
 .rle-contact__field {
@@ -630,6 +654,8 @@ body.rle-popup-open {
 .rle-contact input,
 .rle-contact textarea {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     border: 0;
     border-bottom: 1px solid #BCBCBC;
     border-radius: 0;
@@ -872,9 +898,9 @@ body.rle-popup-open {
     }
 
     .rle-popup__close {
-        width: 44px;
-        height: 44px;
-        font-size: 34px;
+        width: 24px;
+        height: 24px;
+        font-size: 0;
     }
 
     .rle-nav {
@@ -892,7 +918,7 @@ body.rle-popup-open {
     }
 
     .rle-overlay__dialog {
-        width: min(92vw, 720px);
+        width: min(100%, 720px);
         max-height: min(86vh, 820px);
         align-self: center;
     }
@@ -947,7 +973,9 @@ body.rle-popup-open {
 
 @media (prefers-reduced-motion: reduce) {
     .rle-showcase .rle-row,
-    .rle-showcase .rle-row__button {
+    .rle-showcase .rle-row__button,
+    .rle-popup,
+    .rle-overlay {
         transition: none;
     }
 }

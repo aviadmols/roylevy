@@ -37,25 +37,33 @@ document.addEventListener('DOMContentLoaded', function() {
         frame = requestAnimationFrame(updateBackground);
     };
 
+    const fadeMs = 500;
+
     const syncBodyLock = function() {
-        const open = document.querySelector('.rle-popup.is-open, .rle-overlay.is-open');
+        const open = document.querySelector('.rle-popup.is-open, .rle-overlay.is-open, .rle-popup.is-closing, .rle-overlay.is-closing');
         document.body.classList.toggle('rle-popup-open', Boolean(open));
     };
 
     const closePopup = function(popup) {
-        if (!popup) {
+        if (!popup || (!popup.classList.contains('is-open') && !popup.classList.contains('is-closing'))) {
             return;
         }
 
         const iframe = popup.querySelector('[data-rle-popup-iframe]');
         popup.classList.remove('is-open', 'is-loaded');
+        popup.classList.add('is-closing');
         popup.setAttribute('aria-hidden', 'true');
-
-        if (iframe) {
-            iframe.src = 'about:blank';
-        }
-
         syncBodyLock();
+
+        window.setTimeout(function() {
+            popup.classList.remove('is-closing');
+
+            if (!popup.classList.contains('is-open') && iframe) {
+                iframe.src = 'about:blank';
+            }
+
+            syncBodyLock();
+        }, fadeMs);
     };
 
     const closeOverlays = function(section) {
@@ -63,7 +71,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         overlays.forEach(function(overlay) {
             overlay.classList.remove('is-open');
+            overlay.classList.add('is-closing');
             overlay.setAttribute('aria-hidden', 'true');
+
+            window.setTimeout(function() {
+                overlay.classList.remove('is-closing');
+                syncBodyLock();
+            }, fadeMs);
         });
 
         syncBodyLock();
@@ -78,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        overlay.classList.remove('is-closing');
         overlay.classList.add('is-open');
         overlay.setAttribute('aria-hidden', 'false');
         syncBodyLock();
@@ -99,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 event.preventDefault();
                 closeOverlays(section);
-                popup.classList.remove('is-loaded');
+                popup.classList.remove('is-loaded', 'is-closing');
                 popup.classList.add('is-open');
                 popup.setAttribute('aria-hidden', 'false');
                 syncBodyLock();

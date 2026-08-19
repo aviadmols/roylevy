@@ -2,7 +2,7 @@
 /*
 Plugin Name: Roey Events
 Description: Event post type, automatic import and showcase display for upcoming shows.
-Version: 1.7.8
+Version: 1.8.1
 Author: Site Admin
 */
 
@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RLE_VERSION', '1.7.8');
+define('RLE_VERSION', '1.8.1');
 define('RLE_URL', plugin_dir_url(__FILE__));
 define('RLE_PATH', plugin_dir_path(__FILE__));
 
