@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     const fadeMs = 500;
+    const overlayFadeMs = 380;
 
     const syncBodyLock = function() {
         const open = document.querySelector('.rle-popup.is-open, .rle-overlay.is-open, .rle-popup.is-closing, .rle-overlay.is-closing');
@@ -77,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.setTimeout(function() {
                 overlay.classList.remove('is-closing');
                 syncBodyLock();
-            }, fadeMs);
+            }, overlayFadeMs);
         });
 
         syncBodyLock();
