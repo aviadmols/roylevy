@@ -2,7 +2,7 @@
 /*
 Plugin Name: Roey Events
 Description: Event post type, automatic import and showcase display for upcoming shows.
-Version: 1.8.1
+Version: 1.8.2
 Author: Site Admin
 */
 
@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RLE_VERSION', '1.8.1');
+define('RLE_VERSION', '1.8.2');
 define('RLE_URL', plugin_dir_url(__FILE__));
 define('RLE_PATH', plugin_dir_path(__FILE__));
 
@@ -19,6 +19,7 @@ add_action('add_meta_boxes', 'rle_add_event_meta_box');
 add_action('save_post_rle_event', 'rle_save_event_meta', 10, 2);
 add_action('admin_enqueue_scripts', 'rle_admin_assets');
 add_action('wp_enqueue_scripts', 'rle_front_assets');
+add_action('wp_head', 'rle_boot_fade_head', 0);
 add_action('wp_ajax_rle_fetch_event', 'rle_ajax_fetch_event');
 add_action('wp_ajax_rle_contact', 'rle_ajax_contact');
 add_action('wp_ajax_nopriv_rle_contact', 'rle_ajax_contact');
@@ -434,8 +435,66 @@ function rle_admin_assets($hook) {
     wp_add_inline_style('rle-admin', '.rle-admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:8px 0}.rle-admin-field{display:flex;flex-direction:column;gap:7px}.rle-admin-field-wide{grid-column:1/-1}.rle-admin-field label{font-weight:600}.rle-admin-field input[type=text],.rle-admin-field input[type=url],.rle-admin-field input[type=date],.rle-admin-field input[type=time]{width:100%;min-height:40px}.rle-admin-url-row{display:flex;gap:10px;align-items:center}.rle-admin-url-row input{flex:1}#rle-fetch-status{margin-top:8px;font-weight:600}.rle-status-success{color:#008a20}.rle-status-error{color:#b32d2e}.rle-admin-statuses{display:flex;flex-wrap:wrap;gap:10px}.rle-admin-status{position:relative;display:inline-flex;cursor:pointer}.rle-admin-status input{position:absolute;opacity:0;pointer-events:none}.rle-admin-status span{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;border:1px solid #c3c4c7;border-radius:7px;background:#fff;font-weight:700}.rle-admin-status input:checked+span{border-color:#2271b1;background:#2271b1;color:#fff}.rle-admin-status--last input:checked+span{border-color:#dba617;background:#f1c54a;color:#111}.rle-admin-status--sold input:checked+span{border-color:#8f1d1d;background:#a62d2d;color:#fff}@media(max-width:782px){.rle-admin-grid{grid-template-columns:1fr}.rle-admin-field-wide{grid-column:auto}.rle-admin-url-row{align-items:stretch;flex-direction:column}}');
 }
 
+function rle_page_has_showcase() {
+    if (is_admin()) {
+        return false;
+    }
+
+    if (is_front_page()) {
+        return true;
+    }
+
+    if (!is_singular()) {
+        return false;
+    }
+
+    $post = get_queried_object();
+    if (!$post || empty($post->post_content)) {
+        return false;
+    }
+
+    return has_shortcode($post->post_content, 'roey_events') || has_shortcode($post->post_content, 'roey_events_showcase');
+}
+
+function rle_boot_fade_head() {
+    if (!rle_page_has_showcase()) {
+        return;
+    }
+    ?>
+    <style id="rle-boot-css">
+        html.rle-boot body {
+            opacity: 0 !important;
+            background: #1E161E !important;
+        }
+        html.rle-ready body {
+            opacity: 1 !important;
+            background: #1E161E !important;
+            transition: opacity .75s ease !important;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            html.rle-ready body {
+                transition: none !important;
+            }
+        }
+    </style>
+    <script>
+        document.documentElement.classList.add('rle-boot');
+        window.setTimeout(function() {
+            document.documentElement.classList.add('rle-ready');
+            document.documentElement.classList.remove('rle-boot');
+        }, 2500);
+    </script>
+    <?php
+}
+
 function rle_front_assets() {
-    wp_register_style('rle-events', RLE_URL . 'assets/events.css', [], RLE_VERSION);
+    wp_register_style(
+        'rle-heebo',
+        'https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap',
+        [],
+        null
+    );
+    wp_register_style('rle-events', RLE_URL . 'assets/events.css', ['rle-heebo'], RLE_VERSION);
     wp_register_script('rle-events', RLE_URL . 'assets/events.js', [], RLE_VERSION, true);
 }
 

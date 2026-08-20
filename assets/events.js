@@ -252,6 +252,56 @@ document.addEventListener('DOMContentLoaded', function() {
         closePopup(openPopup);
     });
 
+    const revealPage = function() {
+        if (document.documentElement.classList.contains('rle-ready')) {
+            return;
+        }
+
+        document.documentElement.classList.add('rle-ready');
+        document.documentElement.classList.remove('rle-boot');
+        sections.forEach(function(section) {
+            section.classList.add('is-ready');
+        });
+    };
+
+    const waitForImage = function(img) {
+        if (!img || img.complete) {
+            return Promise.resolve();
+        }
+
+        return new Promise(function(resolve) {
+            img.addEventListener('load', resolve, { once: true });
+            img.addEventListener('error', resolve, { once: true });
+        });
+    };
+
+    const pendingImages = [];
+    sections.forEach(function(section) {
+        Array.from(section.querySelectorAll('img')).forEach(function(img) {
+            if (img.closest('.rle-overlay, .rle-popup')) {
+                return;
+            }
+
+            pendingImages.push(waitForImage(img));
+        });
+    });
+
+    Promise.all(pendingImages).then(function() {
+        window.requestAnimationFrame(revealPage);
+    });
+
+    window.setTimeout(revealPage, 1800);
+
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function() {
+            window.requestAnimationFrame(function() {
+                if (pendingImages.length === 0) {
+                    revealPage();
+                }
+            });
+        });
+    }
+
     updateBackground();
     window.addEventListener('scroll', requestUpdate, { passive: true });
     window.addEventListener('resize', requestUpdate);
