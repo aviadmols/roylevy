@@ -524,7 +524,7 @@ body.rle-popup-open {
     background-position: center center;
     background-repeat: no-repeat;
     background-color: #000;
-    transition: opacity .22s ease;
+    transition: opacity .32s ease;
 }
 
 .rle-overlay.is-open .rle-overlay__backdrop {
@@ -534,7 +534,7 @@ body.rle-popup-open {
 
 .rle-overlay.is-closing .rle-overlay__backdrop {
     opacity: 0;
-    transition-delay: .14s;
+    transition-delay: .18s;
 }
 
 .rle-overlay__dialog {
@@ -550,12 +550,12 @@ body.rle-popup-open {
     border: 0;
     box-shadow: none;
     opacity: 0;
-    transition: opacity .22s ease;
+    transition: opacity .32s ease;
 }
 
 .rle-overlay.is-open .rle-overlay__dialog {
     opacity: 1;
-    transition-delay: .14s;
+    transition-delay: .18s;
 }
 
 .rle-overlay.is-closing .rle-overlay__dialog {
