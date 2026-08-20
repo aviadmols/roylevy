@@ -2,7 +2,7 @@
 /*
 Plugin Name: Roey Events
 Description: Event post type, automatic import and showcase display for upcoming shows.
-Version: 1.8.4
+Version: 1.9.1
 Author: Site Admin
 */
 
@@ -10,11 +10,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RLE_VERSION', '1.8.4');
+define('RLE_VERSION', '1.9.1');
 define('RLE_URL', plugin_dir_url(__FILE__));
 define('RLE_PATH', plugin_dir_path(__FILE__));
 
 add_action('init', 'rle_register_event_post_type');
+add_action('init', 'rle_register_inquiry_post_type');
 add_action('add_meta_boxes', 'rle_add_event_meta_box');
 add_action('save_post_rle_event', 'rle_save_event_meta', 10, 2);
 add_action('admin_enqueue_scripts', 'rle_admin_assets');
@@ -26,6 +27,9 @@ add_action('wp_ajax_nopriv_rle_contact', 'rle_ajax_contact');
 add_filter('manage_rle_event_posts_columns', 'rle_event_columns');
 add_action('manage_rle_event_posts_custom_column', 'rle_event_column_content', 10, 2);
 add_filter('manage_edit-rle_event_sortable_columns', 'rle_event_sortable_columns');
+add_filter('manage_rle_inquiry_posts_columns', 'rle_inquiry_columns');
+add_action('manage_rle_inquiry_posts_custom_column', 'rle_inquiry_column_content', 10, 2);
+add_action('add_meta_boxes', 'rle_add_inquiry_meta_box');
 add_action('pre_get_posts', 'rle_event_admin_orderby');
 add_shortcode('roey_events', 'rle_events_shortcode');
 add_shortcode('roey_events_showcase', 'rle_events_shortcode');
@@ -35,6 +39,7 @@ register_activation_hook(__FILE__, 'rle_activate');
 
 function rle_activate() {
     rle_register_event_post_type();
+    rle_register_inquiry_post_type();
     flush_rewrite_rules();
 }
 
@@ -67,6 +72,142 @@ function rle_register_event_post_type() {
         'capability_type' => 'post',
         'map_meta_cap' => true,
     ]);
+}
+
+function rle_register_inquiry_post_type() {
+    $labels = [
+        'name' => 'פניות',
+        'singular_name' => 'פנייה',
+        'menu_name' => 'פניות מהאתר',
+        'all_items' => 'כל הפניות',
+        'view_item' => 'צפייה בפנייה',
+        'search_items' => 'חיפוש פניות',
+        'not_found' => 'אין פניות עדיין',
+        'not_found_in_trash' => 'אין פניות בפח',
+    ];
+
+    register_post_type('rle_inquiry', [
+        'labels' => $labels,
+        'public' => false,
+        'show_ui' => true,
+        'show_in_menu' => 'edit.php?post_type=rle_event',
+        'show_in_rest' => false,
+        'has_archive' => false,
+        'rewrite' => false,
+        'query_var' => false,
+        'supports' => ['title'],
+        'capability_type' => 'post',
+        'map_meta_cap' => true,
+        'capabilities' => [
+            'create_posts' => 'do_not_allow',
+        ],
+    ]);
+}
+
+function rle_save_inquiry($name, $phone, $message) {
+    $post_id = wp_insert_post([
+        'post_type' => 'rle_inquiry',
+        'post_status' => 'publish',
+        'post_title' => $name,
+    ], true);
+
+    if (is_wp_error($post_id)) {
+        return $post_id;
+    }
+
+    update_post_meta($post_id, '_rle_inquiry_phone', $phone);
+    update_post_meta($post_id, '_rle_inquiry_message', $message);
+    update_post_meta($post_id, '_rle_inquiry_ip', isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '');
+
+    return $post_id;
+}
+
+function rle_inquiry_columns($columns) {
+    $new = [];
+    foreach ($columns as $key => $label) {
+        if ($key === 'title') {
+            $new['title'] = 'שם';
+            $new['rle_phone'] = 'טלפון';
+            $new['rle_message'] = 'הודעה';
+            continue;
+        }
+
+        if ($key === 'date') {
+            $new['date'] = 'תאריך';
+            continue;
+        }
+
+        if ($key === 'cb') {
+            $new[$key] = $label;
+        }
+    }
+
+    if (!isset($new['date'])) {
+        $new['date'] = 'תאריך';
+    }
+
+    return $new;
+}
+
+function rle_inquiry_column_content($column, $post_id) {
+    if ($column === 'rle_phone') {
+        $phone = get_post_meta($post_id, '_rle_inquiry_phone', true);
+        if ($phone) {
+            echo '<a href="tel:' . esc_attr(preg_replace('/\s+/', '', $phone)) . '">' . esc_html($phone) . '</a>';
+        }
+    }
+
+    if ($column === 'rle_message') {
+        $message = get_post_meta($post_id, '_rle_inquiry_message', true);
+        if ($message) {
+            echo esc_html(wp_trim_words($message, 18, '…'));
+        }
+    }
+}
+
+function rle_add_inquiry_meta_box() {
+    add_meta_box(
+        'rle_inquiry_details',
+        'פרטי הפנייה',
+        'rle_render_inquiry_meta_box',
+        'rle_inquiry',
+        'normal',
+        'high'
+    );
+}
+
+function rle_render_inquiry_meta_box($post) {
+    $phone = get_post_meta($post->ID, '_rle_inquiry_phone', true);
+    $message = get_post_meta($post->ID, '_rle_inquiry_message', true);
+    $ip = get_post_meta($post->ID, '_rle_inquiry_ip', true);
+    ?>
+    <table class="form-table" role="presentation">
+        <tbody>
+            <tr>
+                <th scope="row">שם</th>
+                <td><?php echo esc_html(get_the_title($post)); ?></td>
+            </tr>
+            <tr>
+                <th scope="row">טלפון</th>
+                <td>
+                    <?php if ($phone) : ?>
+                        <a href="tel:<?php echo esc_attr(preg_replace('/\s+/', '', $phone)); ?>"><?php echo esc_html($phone); ?></a>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">הודעה</th>
+                <td><?php echo nl2br(esc_html($message)); ?></td>
+            </tr>
+            <?php if ($ip) : ?>
+                <tr>
+                    <th scope="row">IP</th>
+                    <td><?php echo esc_html($ip); ?></td>
+                </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
+    <?php
 }
 
 function rle_add_settings_page() {
@@ -531,15 +672,18 @@ function rle_ajax_contact() {
         wp_send_json_error(['message' => 'יש למלא שם, טלפון והודעה.'], 400);
     }
 
+    $saved = rle_save_inquiry($name, $phone, $message);
+    if (is_wp_error($saved)) {
+        wp_send_json_error(['message' => 'שמירת הפנייה נכשלה. נסו שוב מאוחר יותר.'], 500);
+    }
+
     $settings = rle_get_settings();
     $to = $settings['contact_email'] ?: get_option('admin_email');
     $subject = 'פנייה חדשה מהאתר — ' . $name;
     $body = "שם: {$name}\nטלפון: {$phone}\n\n{$message}";
     $headers = ['Content-Type: text/plain; charset=UTF-8'];
 
-    if (!wp_mail($to, $subject, $body, $headers)) {
-        wp_send_json_error(['message' => 'שליחת ההודעה נכשלה. נסו שוב מאוחר יותר.'], 500);
-    }
+    wp_mail($to, $subject, $body, $headers);
 
     wp_send_json_success(['message' => 'ההודעה נשלחה. נחזור אליכם בהקדם.']);
 }

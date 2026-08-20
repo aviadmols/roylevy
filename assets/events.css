@@ -671,7 +671,7 @@ body.rle-popup-open {
 .rle-contact__field span {
     font-size: 12px;
     font-weight: 500;
-    letter-spacing: 3px;
+    letter-spacing: 0;
     color: var(--rle-white-soft);
 }
 
